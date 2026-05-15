@@ -423,6 +423,10 @@ header{
     <div class="sb-div"></div>
     <div class="sb-section">
       <span class="sb-label">Admin</span>
+      <button class="sb-btn" onclick="goMatchDay()" style="color:#ff6b6b">
+        <svg class="sb-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg>
+        ⚡ Match Day
+      </button>
       <button class="sb-btn" onclick="showPage('team')">
         <svg class="sb-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg>
         Team Management
@@ -487,6 +491,12 @@ header{
             <div class="module-title">Invite Users</div>
             <div class="module-desc">Send invite links to coaching staff and players. Each gets access to the right view automatically.</div>
             <div class="module-badge">Access Control</div>
+          </div>
+          <div class="module-card" style="--mc:#C8102E;--mi:rgba(200,16,46,0.12);border:2px solid rgba(200,16,46,0.3)" onclick="goMatchDay()">
+            <div class="module-icon" style="--mi:rgba(200,16,46,0.12)">⚡</div>
+            <div class="module-title">Match Day</div>
+            <div class="module-desc">Live tactical board, team talk timer, score tracking, quarter notes, opposition analysis and match review.</div>
+            <div class="module-badge" style="background:var(--red);color:white;">Go Live →</div>
           </div>
         </div>
 
@@ -633,6 +643,7 @@ header{
     <button class="color-btn" style="background:#44ff44" onclick="setColor('#44ff44')" title="Green"></button>
     <button class="color-btn" style="background:#4488ff" onclick="setColor('#4488ff')" title="Blue"></button>
     <div style="width:1px;height:24px;background:rgba(255,255,255,0.15);margin:0 4px;flex-shrink:0;"></div>
+    <button onclick="toggleTacticPitch()" id="pitchTypeToggle" style="background:rgba(255,255,255,0.1);border:none;border-radius:6px;padding:0 10px;height:30px;color:white;font-size:12px;cursor:pointer;white-space:nowrap;">🏑 Outdoor</button>
     <button onclick="undoCanvas()" style="background:rgba(255,255,255,0.1);border:none;border-radius:6px;padding:0 10px;height:30px;color:white;font-size:12px;cursor:pointer;white-space:nowrap;">↩ Undo</button>
     <button onclick="clearCanvas()" style="background:rgba(255,0,0,0.2);border:none;border-radius:6px;padding:0 10px;height:30px;color:#ff8888;font-size:12px;cursor:pointer;white-space:nowrap;">Clear</button>
     <button onclick="uploadTacticPhoto()" style="background:rgba(255,255,255,0.1);border:none;border-radius:6px;padding:0 10px;height:30px;color:white;font-size:12px;cursor:pointer;white-space:nowrap;margin-left:auto;">📷 Upload Photo</button>
@@ -724,6 +735,7 @@ async function init() {
   }
 }
 
+function goMatchDay(){window.location.href='matchday.html';}
 function doLogout() {
   localStorage.removeItem('em_session');
   window.location.href = 'login.html';
@@ -985,6 +997,7 @@ let canvas, ctx, isDrawing=false, tool='select', drawColor='#ffffff';
 let canvasHistory=[], historyIndex=-1;
 let startX, startY, currentElement=null;
 let elements=[];
+let currentPitchType='outdoor';
 
 function initCanvas() {
   canvas = document.getElementById('tacticCanvas');
@@ -1069,33 +1082,74 @@ function addPlayerToken(num, color) {
 }
 
 function drawPitch() {
-  if (!ctx) return;
-  const w=canvas.width, h=canvas.height;
-  ctx.fillStyle='#2d7a2d';
-  ctx.fillRect(0,0,w,h);
-  // Pitch stripes
-  for(let i=0;i<10;i++) {
-    ctx.fillStyle = i%2===0?'rgba(255,255,255,0.03)':'transparent';
-    ctx.fillRect(i*w/10,0,w/10,h);
-  }
-  ctx.strokeStyle='rgba(255,255,255,0.7)';
-  ctx.lineWidth=2;
-  // Outline
-  ctx.strokeRect(w*0.05,h*0.05,w*0.9,h*0.9);
-  // Centre line
-  ctx.beginPath();ctx.moveTo(w*0.05,h/2);ctx.lineTo(w*0.95,h/2);ctx.stroke();
-  // Centre circle
-  ctx.beginPath();ctx.arc(w/2,h/2,h*0.12,0,Math.PI*2);ctx.stroke();
-  // Centre spot
-  ctx.fillStyle='rgba(255,255,255,0.7)';
-  ctx.beginPath();ctx.arc(w/2,h/2,4,0,Math.PI*2);ctx.fill();
-  // Top D
-  ctx.strokeRect(w*0.3,h*0.05,w*0.4,h*0.2);
-  // Bottom D
-  ctx.strokeRect(w*0.3,h*0.75,w*0.4,h*0.2);
-  // Goals
-  ctx.strokeRect(w*0.4,h*0.01,w*0.2,h*0.04);
-  ctx.strokeRect(w*0.4,h*0.95,w*0.2,h*0.04);
+    if (!ctx) return;
+    const w=canvas.width, h=canvas.height;
+    const indoor = currentPitchType === 'indoor';
+    ctx.fillStyle = indoor ? '#1a3a6b' : '#2d5a1b';
+    ctx.fillRect(0,0,w,h);
+    if(indoor) drawIndoorPitch(w,h); else drawOutdoorPitch(w,h);
+}
+
+function drawOutdoorPitch(w,h) {
+    const lc='rgba(255,255,255,0.85)';
+    ctx.strokeStyle=lc; ctx.lineWidth=2;
+    const px=w*0.04,py=h*0.04,pw=w*0.92,ph=h*0.92;
+    // Pitch stripes
+    for(let i=0;i<8;i++){if(i%2===0){ctx.fillStyle='rgba(255,255,255,0.04)';ctx.fillRect(i*w/8,0,w/8,h);}}
+    ctx.strokeStyle=lc;
+    ctx.strokeRect(px,py,pw,ph);
+    // Centre line
+    ctx.beginPath();ctx.moveTo(px+pw/2,py);ctx.lineTo(px+pw/2,py+ph);ctx.stroke();
+    // Centre circle
+    ctx.beginPath();ctx.arc(px+pw/2,py+ph/2,ph*0.16,0,Math.PI*2);ctx.stroke();
+    ctx.fillStyle=lc;ctx.beginPath();ctx.arc(px+pw/2,py+ph/2,4,0,Math.PI*2);ctx.fill();
+    // 23m lines
+    ctx.beginPath();ctx.moveTo(px+pw*0.25,py);ctx.lineTo(px+pw*0.25,py+ph);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(px+pw*0.75,py);ctx.lineTo(px+pw*0.75,py+ph);ctx.stroke();
+    // Shooting circles
+    ctx.beginPath();ctx.arc(px,py+ph/2,ph*0.3,Math.PI*0.45,Math.PI*1.55);ctx.stroke();
+    ctx.beginPath();ctx.arc(px+pw,py+ph/2,ph*0.3,Math.PI*1.45,Math.PI*0.55);ctx.stroke();
+    // Goals
+    ctx.strokeRect(px-pw*0.02,py+ph/2-ph*0.1,pw*0.02,ph*0.2);
+    ctx.strokeRect(px+pw,py+ph/2-ph*0.1,pw*0.02,ph*0.2);
+    // 5m areas
+    ctx.strokeRect(px,py+ph/2-ph*0.1,pw*0.05,ph*0.2);
+    ctx.strokeRect(px+pw-pw*0.05,py+ph/2-ph*0.1,pw*0.05,ph*0.2);
+    // Penalty spots
+    ctx.fillStyle=lc;
+    ctx.beginPath();ctx.arc(px+pw*0.07,py+ph/2,4,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.arc(px+pw*0.93,py+ph/2,4,0,Math.PI*2);ctx.fill();
+    // Labels
+    ctx.fillStyle='rgba(255,255,255,0.18)';
+    ctx.font=`bold ${Math.max(10,w*0.013)}px 'Barlow Condensed',sans-serif`;
+    ctx.textAlign='center';ctx.textBaseline='bottom';
+    ctx.fillText('ATTACKING END',px+pw*0.87,py+ph-4);
+    ctx.fillText('DEFENDING END',px+pw*0.13,py+ph-4);
+}
+
+function drawIndoorPitch(w,h) {
+    const lc='rgba(255,255,255,0.9)';
+    ctx.strokeStyle=lc; ctx.lineWidth=2;
+    const px=w*0.03,py=h*0.04,pw=w*0.94,ph=h*0.92;
+    ctx.strokeRect(px,py,pw,ph);
+    ctx.beginPath();ctx.moveTo(px+pw/2,py);ctx.lineTo(px+pw/2,py+ph);ctx.stroke();
+    ctx.beginPath();ctx.arc(px+pw/2,py+ph/2,ph*0.2,0,Math.PI*2);ctx.stroke();
+    ctx.fillStyle=lc;ctx.beginPath();ctx.arc(px+pw/2,py+ph/2,4,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.arc(px,py+ph/2,ph*0.35,Math.PI*0.4,Math.PI*1.6);ctx.stroke();
+    ctx.beginPath();ctx.arc(px+pw,py+ph/2,ph*0.35,Math.PI*1.4,Math.PI*0.6);ctx.stroke();
+    ctx.strokeRect(px-pw*0.02,py+ph/2-ph*0.14,pw*0.02,ph*0.28);
+    ctx.strokeRect(px+pw,py+ph/2-ph*0.14,pw*0.02,ph*0.28);
+    ctx.fillStyle=lc;
+    ctx.beginPath();ctx.arc(px+pw*0.08,py+ph/2,4,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.arc(px+pw*0.92,py+ph/2,4,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,0.06)';
+    ctx.fillRect(0,0,px,h);ctx.fillRect(px+pw,0,w-px-pw,h);
+    ctx.strokeStyle='rgba(255,255,255,0.2)';
+    ctx.strokeRect(0,0,px,h);ctx.strokeRect(px+pw,0,w-px-pw,h);
+    ctx.fillStyle='rgba(255,255,255,0.18)';
+    ctx.font=`bold ${Math.max(9,w*0.012)}px 'Barlow Condensed',sans-serif`;
+    ctx.textAlign='center';ctx.textBaseline='bottom';
+    ctx.fillText('INDOOR FIELD HOCKEY PITCH',px+pw/2,py+ph-4);
 }
 
 function redrawElements() {
