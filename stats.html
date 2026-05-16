@@ -266,7 +266,7 @@ let currentStatEdit={goals:0,assists:0,pcs_won:0,green_cards:0,yellow_cards:0,re
 let editingResultId=null;
 const hdrs=tok=>({apikey:SB_KEY,Authorization:`Bearer ${tok||SB_KEY}`,'Content-Type':'application/json'});
 
-async async function init(){
+async function init(){
   const stored=localStorage.getItem('em_session');
   if(!stored){window.location.href='login.html';return;}
   session=JSON.parse(stored);
@@ -421,7 +421,7 @@ function openAddStats(){
   document.getElementById('sc-motm').checked=false;
   const sel=document.getElementById('statsPlayer');
   sel.innerHTML=players.map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
-  document.getElementById('statsModalTitle').innerHTML='Log Player Stats <button class="modal-close" onclick="closeModal('statsModal')">✕</button>';
+  document.getElementById('statsModalTitle').textContent='Log Player Stats';
   openModal('statsModal');
 }
 
