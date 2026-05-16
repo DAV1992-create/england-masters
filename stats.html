@@ -266,7 +266,7 @@ let currentStatEdit={goals:0,assists:0,pcs_won:0,green_cards:0,yellow_cards:0,re
 let editingResultId=null;
 const hdrs=tok=>({apikey:SB_KEY,Authorization:`Bearer ${tok||SB_KEY}`,'Content-Type':'application/json'});
 
-async function init(){
+async async function init(){
   const stored=localStorage.getItem('em_session');
   if(!stored){window.location.href='login.html';return;}
   session=JSON.parse(stored);
